@@ -1,16 +1,18 @@
-from transformers import GPT2LMHeadModel, GPT2Tokenizer
+from flask import Flask, request, jsonify, render_template
+from chatbot import ChatBot
 
-class ChatBot:
-    def __init__(self):
-        self.model_name = "gpt2"
-        self.model = GPT2LMHeadModel.from_pretrained(self.model_name)
-        self.tokenizer = GPT2Tokenizer.from_pretrained(self.model_name)
-        self.history = []
+app = Flask(__name__)
+bot = ChatBot()
 
-    def generate_response(self, user_input):
-        self.history.append(user_input)
-        input_ids = self.tokenizer.encode(" ".join(self.history), return_tensors="pt")
-        output = self.model.generate(input_ids, max_length=1000, pad_token_id=self.tokenizer.eos_token_id)
-        response = self.tokenizer.decode(output[:, input_ids.shape[-1]:][0], skip_special_tokens=True)
-        self.history.append(response)
-        return response
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    user_input = request.json.get("message")
+    response = bot.generate_response(user_input)
+    return jsonify({"response": response})
+
+if __name__ == "__main__":
+    app.run(debug=True)
